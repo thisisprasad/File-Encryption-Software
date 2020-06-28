@@ -11,7 +11,7 @@ import (
 type DES_8encryption struct {
 	p4                  []int //	4-length permutation
 	p8                  []int //	8-length permutation
-	p10                 []int
+	p10                 []int //	10-length permuation
 	initialPermutation  []int
 	inversePermutation  []int
 	expansionPermuation []int
@@ -35,9 +35,7 @@ E/P:4 1 2 3 2 3 4 1
 S0:1 0 3 2 3 2 1 0 0 2 1 3 3 1 3 2
 S1:0 1 2 3 2 0 1 3 3 0 1 0 2 1 0 3
 */
-func (cipher *DES_8encryption) init(configFile string) {
-	log.Println("Initializing cipher")
-
+func (cipher *DES_8encryption) readFile(configFile string) {
 	var s string
 	file, err := os.Open(configFile)
 	if err != nil {
@@ -45,13 +43,82 @@ func (cipher *DES_8encryption) init(configFile string) {
 	}
 	defer file.Close()
 
+	//	Key
 	scanner := bufio.NewScanner(file)
 	scanner.Scan()
 	s = scanner.Text()
 	cipher.key = strings.Split(s, ":")[1]
 
+	//	p10 permutation
 	scanner.Scan()
-	s = strings.Split(s, ":")[1]
-	fmt.Println("p10 split: ", s)
-	cipher.p10 = StringToArray(s)
+	s = strings.Split(scanner.Text(), ":")[1]
+	cipher.p10 = StringToIntArray(s)
+
+	//	p8 permutation
+	scanner.Scan()
+	s = strings.Split(scanner.Text(), ":")[1]
+	cipher.p8 = StringToIntArray(s)
+
+	//	p4 permuation
+	scanner.Scan()
+	s = strings.Split(scanner.Text(), ":")[1]
+	cipher.p4 = StringToIntArray(s)
+
+	//	initial permutation
+	scanner.Scan()
+	s = strings.Split(scanner.Text(), ":")[1]
+	cipher.initialPermutation = StringToIntArray(s)
+
+	//	inverse permutation
+	scanner.Scan()
+	s = strings.Split(scanner.Text(), ":")[1]
+	cipher.inversePermutation = StringToIntArray(s)
+
+	//	expansion permuation
+	scanner.Scan()
+	s = strings.Split(scanner.Text(), ":")[1]
+	cipher.expansionPermuation = StringToIntArray(s)
+
+	//	s0 matrix
+	scanner.Scan()
+	s = strings.Split(scanner.Text(), ":")[1]
+	cipher.s0 = StringTo2DIntArray(s, 4, 4)
+
+	//	s1 matrix
+	scanner.Scan()
+	s = strings.Split(scanner.Text(), ":")[1]
+	cipher.s1 = StringTo2DIntArray(s, 4, 4)
+}
+
+func (cipher *DES_8encryption) generateIntermediateKeys() {
+	var p10key string = cipher.applyPermutation(cipher.key, cipher.p10)
+	var leftHalf string = Substr(p10key, 0, 5)
+	var rightHalf string = Substr(p10key, 5, 5)
+
+	fmt.Println("lefthalf:", leftHalf, "righthalf:", rightHalf)
+}
+
+func (cipher *DES_8encryption) Init(configFile string) {
+	log.Println("Initializing cipher...")
+
+	cipher.readFile(configFile)
+	cipher.generateIntermediateKeys()
+
+	log.Println("cipher intialization complete...")
+}
+
+func (cipher *DES_8encryption) applyPermutation(data string, permutation []int) string {
+	var res string
+	for i := 0; i < len(permutation); i++ {
+		ch := data[permutation[i]-1] //	0-indexed
+		res += (string)(ch)
+	}
+
+	return res
+}
+
+func (cipher *DES_8encryption) Encrypt(plainText string) string {
+	// ipBits := cipher.applyPermutation(plainText, cipher.initialPermutation)
+
+	return ""
 }
