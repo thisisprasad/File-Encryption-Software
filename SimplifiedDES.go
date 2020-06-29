@@ -62,6 +62,7 @@ func (cipher *DES_8encryption) readFile(configFile string) {
 	scanner.Scan()
 	s = strings.Split(scanner.Text(), ":")[1]
 	cipher.p8 = StringToIntArray(s)
+	fmt.Println("P8 size:", len(cipher.p8))
 
 	//	p4 permuation
 	scanner.Scan()
@@ -96,13 +97,23 @@ func (cipher *DES_8encryption) readFile(configFile string) {
 
 func (cipher *DES_8encryption) generateIntermediateKeys() {
 	var p10key = cipher.applyPermutation(cipher.key, cipher.p10)
-	var leftHalf []byte = p10key[0:5]
-	var rightHalf []byte = p10key[5:]
-
-	fmt.Println("lefthalf:", leftHalf, "righthalf:", rightHalf)
+	var leftHalf []byte = p10key[0 : len(p10key)/2]
+	var rightHalf []byte = p10key[len(p10key)/2:]
 	cipher.circularLeftShift(&leftHalf, 1)
 	cipher.circularLeftShift(&rightHalf, 1)
-	fmt.Println("lefthalf:", leftHalf, "righthalf:", rightHalf)
+
+	var combinedKey []byte = make([]byte, len(p10key))
+	copy(combinedKey[:len(p10key)/2], leftHalf[:])
+	copy(combinedKey[len(p10key)/2:], rightHalf[:])
+	cipher.key1 = cipher.applyPermutation(combinedKey, cipher.p8)
+	fmt.Println("key1:", cipher.key1)
+
+	leftHalf = combinedKey[0 : len(combinedKey)/2]
+	rightHalf = combinedKey[len(combinedKey)/2:]
+	cipher.circularLeftShift(&leftHalf, 2)
+	cipher.circularLeftShift(&rightHalf, 2)
+	cipher.key2 = cipher.applyPermutation(combinedKey, cipher.p8)
+	fmt.Println("key2:", cipher.key2)
 }
 
 func (cipher *DES_8encryption) Init(configFile string) {
@@ -131,7 +142,7 @@ func (cipher *DES_8encryption) circularLeftShift(data *[]byte, shiftBy int) {
 }
 
 func (cipher *DES_8encryption) applyPermutation(data []byte, permutation []int) []byte {
-	var res []byte = make([]byte, len(data))
+	var res []byte = make([]byte, len(permutation))
 	pos := 0
 	for i := 0; i < len(permutation); i++ {
 		ch := data[permutation[i]-1] //	0-indexed
