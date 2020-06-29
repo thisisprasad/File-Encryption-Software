@@ -17,9 +17,9 @@ type DES_8encryption struct {
 	expansionPermuation []int
 	s0                  [][]int //	s0 matrix
 	s1                  [][]int //	s1-matrix
-	key                 string
-	key1                string
-	key2                string
+	key                 []byte
+	key1                []byte
+	key2                []byte
 }
 
 /**
@@ -47,7 +47,11 @@ func (cipher *DES_8encryption) readFile(configFile string) {
 	scanner := bufio.NewScanner(file)
 	scanner.Scan()
 	s = scanner.Text()
-	cipher.key = strings.Split(s, ":")[1]
+	cipher.key = []byte(strings.Split(s, ":")[1])
+	//	Converting char value to integer value
+	for i := 0; i < len(cipher.key); i++ {
+		cipher.key[i] = cipher.key[i] - '0'
+	}
 
 	//	p10 permutation
 	scanner.Scan()
@@ -91,10 +95,13 @@ func (cipher *DES_8encryption) readFile(configFile string) {
 }
 
 func (cipher *DES_8encryption) generateIntermediateKeys() {
-	var p10key string = cipher.applyPermutation(cipher.key, cipher.p10)
-	var leftHalf string = Substr(p10key, 0, 5)
-	var rightHalf string = Substr(p10key, 5, 5)
+	var p10key = cipher.applyPermutation(cipher.key, cipher.p10)
+	var leftHalf []byte = p10key[0:5]
+	var rightHalf []byte = p10key[5:]
 
+	fmt.Println("lefthalf:", leftHalf, "righthalf:", rightHalf)
+	cipher.circularLeftShift(&leftHalf, 1)
+	cipher.circularLeftShift(&rightHalf, 1)
 	fmt.Println("lefthalf:", leftHalf, "righthalf:", rightHalf)
 }
 
@@ -107,11 +114,29 @@ func (cipher *DES_8encryption) Init(configFile string) {
 	log.Println("cipher intialization complete...")
 }
 
-func (cipher *DES_8encryption) applyPermutation(data string, permutation []int) string {
-	var res string
+func (cipher *DES_8encryption) circularLeftShift(data *[]byte, shiftBy int) {
+	shiftBy %= len(*data)
+	var cache []byte = make([]byte, shiftBy)
+	for i := 0; i < shiftBy; i++ {
+		cache[i] = (*data)[i]
+	}
+	for i := shiftBy; i < len(*data); i++ {
+		(*data)[i-shiftBy] = (*data)[i]
+	}
+	pos := 0
+	for i := len(*data) - shiftBy; i < len(*data); i++ {
+		(*data)[i] = cache[pos]
+		pos += 1
+	}
+}
+
+func (cipher *DES_8encryption) applyPermutation(data []byte, permutation []int) []byte {
+	var res []byte = make([]byte, len(data))
+	pos := 0
 	for i := 0; i < len(permutation); i++ {
 		ch := data[permutation[i]-1] //	0-indexed
-		res += (string)(ch)
+		res[pos] = ch
+		pos += 1
 	}
 
 	return res
