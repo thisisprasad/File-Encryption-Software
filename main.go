@@ -5,7 +5,7 @@ import "fmt"
 var (
 	cipher    DES_8encryption
 	encryptor DESFileEncryptor
-	input     []byte = []byte{1, 0, 1, 0, 0, 1, 0, 1}
+	input     []byte = []byte{0, 1, 1, 1, 1, 0, 0, 1}
 )
 
 func main() {

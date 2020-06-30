@@ -218,11 +218,13 @@ func (cipher *DES_8encryption) fk(leftHalf []byte, rightHalf []byte, key []byte)
 encryption API exposed to client
 */
 func (cipher *DES_8encryption) Encrypt(plainText []byte) []byte {
+	log.Println("Input byte is:", plainText)
+
 	var ipBits []byte = cipher.applyPermutation(plainText, cipher.initialPermutation)
 	var leftHalf []byte = ipBits[0 : len(ipBits)/2]
 	var rightHalf []byte = ipBits[len(ipBits)/2:]
 	var fkBits []byte = cipher.fk(leftHalf, rightHalf, cipher.key1)
-	fmt.Println("fkbits:", fkBits)
+	// fmt.Println("fkbits:", fkBits)
 
 	rightHalf = fkBits[0 : len(fkBits)/2]
 	leftHalf = fkBits[len(fkBits)/2:]
