@@ -77,13 +77,15 @@ func (encryptor *DESFileEncryptor) writeEncryptionBufferToFile(encryptionBuffer 
 		log.Fatalln("Problem encrypting file", err)
 	}
 	defer file.Close()
-	_, err := file.WriteLine
+	_, err = file.WriteString((string)(byteArray))
 }
 
-func (encryptor *DESFileEncryptor) EncryptFile(filename string) {
-	encryptor.filename = filename
-	encryptor.encryptionFilename = filename + ".enc"
-	encryptor.cipher.Init("des_input.txt")
+/**
+Reads in a chunk of byte-data from file.
+Encrypts it.
+Writes the encrypted chunk of data in the encryption file
+*/
+func (encryptor *DESFileEncryptor) run(filename string) {
 
 	file, err := os.Open(filename)
 	if err != nil {
@@ -91,6 +93,12 @@ func (encryptor *DESFileEncryptor) EncryptFile(filename string) {
 		return
 	}
 	defer file.Close()
+
+	//	Create encryption file
+	_, err = os.Create(encryptor.encryptionFilename)
+	if err != nil {
+		log.Fatalln("Problem encrypting file", err)
+	}
 
 	var buffer []byte
 	buffer = make([]byte, bufferSize)
@@ -115,4 +123,18 @@ func (encryptor *DESFileEncryptor) EncryptFile(filename string) {
 
 		fmt.Println("bytesread:", bytesread, "bytes to string:", string(buffer[:bytesread]))
 	}
+}
+
+/**
+public File-encryption API exposed
+*/
+func (encryptor *DESFileEncryptor) EncryptFile(filename string) {
+	log.Println("File-Encryption procedure started...")
+
+	encryptor.filename = filename
+	encryptor.encryptionFilename = filename + ".enc"
+	encryptor.cipher.Init("des_input.txt")
+	encryptor.run(filename)
+
+	log.Println("File-Encryption procedure complete...")
 }
