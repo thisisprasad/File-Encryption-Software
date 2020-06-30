@@ -12,9 +12,11 @@ const (
 )
 
 type DESFileEncryptor struct {
-	filename           string
-	encryptionFilename string
-	cipher             DES_8encryption
+	filename                string
+	encryptionFilename      string
+	cipher                  DES_8encryption
+	decryptionFileConnector *os.File
+	decryptionFilename      string
 }
 
 func (encryptor *DESFileEncryptor) getBinaryByteArray(byteVal byte) []byte {
@@ -44,20 +46,30 @@ func (encryptor *DESFileEncryptor) convertBinaryByteArrayToByte(byteArray *[]byt
 	return res
 }
 
-func (encryptor *DESFileEncryptor) encryptChunk(buffer *[]byte, encryptionBuffer *[][]byte) {
-	for i := 0; i < len(*buffer); i++ {
+func (encryptor *DESFileEncryptor) encryptChunk(buffer *[]byte, bufferDataSize int, encryptionBuffer *[][]byte) {
+	for i := 0; i < bufferDataSize; i++ {
 		byteVal := (*buffer)[i]
 		var binaryByteArray []byte = encryptor.getBinaryByteArray(byteVal)
 		(*encryptionBuffer)[i] = encryptor.cipher.Encrypt(binaryByteArray)
 	}
 }
 
-func (encryptor *DESFileEncryptor) writeEncryptionBufferToFile(encryptionBuffer *[][]byte, filename string) {
+func (engine *DESFileEncryptor) decryptChunk(buffer *[]byte, bufferDataSize int, decryptionBuffer *[][]byte) {
+	for i := 0; i < bufferDataSize; i++ {
+		byteVal := (*buffer)[i]
+		var binaryByteArray []byte = engine.getBinaryByteArray(byteVal)
+		(*decryptionBuffer)[i] = engine.cipher.Decrypt(binaryByteArray)
+	}
+}
+
+func (encryptor *DESFileEncryptor) writeEncryptionBufferToFile(encryptionBuffer *[][]byte,
+	encryptionDataSize int,
+	filename string) {
 	// var byteVal byte
-	fmt.Println("enccryption buffer length:", len(*encryptionBuffer))
-	var byteArray []byte = make([]byte, len(*encryptionBuffer))
+	fmt.Println("enccryption buffer length:", encryptionDataSize)
+	var byteArray []byte = make([]byte, encryptionDataSize)
 	var cache []byte = make([]byte, 8)
-	for i := 0; i < len(*encryptionBuffer); i++ {
+	for i := 0; i < encryptionDataSize; i++ {
 		copy(cache[:], (*encryptionBuffer)[i][:])
 		byteVal := encryptor.convertBinaryByteArrayToByte(&cache)
 		byteArray[i] = byteVal
@@ -78,6 +90,25 @@ func (encryptor *DESFileEncryptor) writeEncryptionBufferToFile(encryptionBuffer 
 	}
 	defer file.Close()
 	_, err = file.WriteString((string)(byteArray))
+}
+
+func (engine *DESFileEncryptor) writeDecryptionBufferToFile(decryptionBuffer *[][]byte,
+	decryptionDataSize int,
+	filename string) {
+
+	fmt.Println("Decryption buffer length:", decryptionDataSize)
+	var byteArray []byte = make([]byte, decryptionDataSize)
+	var cache []byte = make([]byte, 8)
+	for i := 0; i < decryptionDataSize; i++ {
+		copy(cache[:], (*decryptionBuffer)[i][:])
+		byteVal := engine.convertBinaryByteArrayToByte(&cache)
+		byteArray[i] = byteVal
+	}
+
+	_, err := engine.decryptionFileConnector.WriteString((string)(byteArray))
+	if err != nil {
+		log.Fatalln("Problem decrypting file", err)
+	}
 }
 
 /**
@@ -117,16 +148,42 @@ func (encryptor *DESFileEncryptor) run(filename string) {
 			break
 		}
 
-		encryptor.encryptChunk(&buffer, &encryptionBuffer)
+		encryptor.encryptChunk(&buffer, bytesread, &encryptionBuffer)
 		//	Write encryptionBuffer into file.
-		encryptor.writeEncryptionBufferToFile(&encryptionBuffer, encryptor.encryptionFilename)
+		encryptor.writeEncryptionBufferToFile(&encryptionBuffer, bytesread, encryptor.encryptionFilename)
 
 		fmt.Println("bytesread:", bytesread, "bytes to string:", string(buffer[:bytesread]))
 	}
 }
 
 /**
-public File-encryption API exposed
+Decrypt the bytes of the encrypted file
+*/
+func (engine *DESFileEncryptor) runDecryption(filename string) {
+	var buffer []byte = make([]byte, bufferSize)
+	var decryptionBuffer [][]byte = make([][]byte, bufferSize)
+	for i := 0; i < bufferSize; i++ {
+		decryptionBuffer[i] = make([]byte, 8)
+	}
+
+	for {
+		bytesread, err := engine.decryptionFileConnector.Read(buffer)
+		if err != nil {
+			if err != io.EOF {
+				log.Fatalln("Problem reading encrypted file", err)
+			}
+			break
+		}
+		engine.decryptChunk(&buffer, bytesread, &decryptionBuffer)
+		//	Write decryptionBuffer into file
+		engine.writeDecryptionBufferToFile(&decryptionBuffer, bytesread, engine.decryptionFilename)
+
+		fmt.Println("Decryption, bytesread:", bytesread, " bytes to string:", string(buffer[:bytesread]))
+	}
+}
+
+/**
+public File-encryption API
 */
 func (encryptor *DESFileEncryptor) EncryptFile(filename string) {
 	log.Println("File-Encryption procedure started...")
@@ -137,4 +194,26 @@ func (encryptor *DESFileEncryptor) EncryptFile(filename string) {
 	encryptor.run(filename)
 
 	log.Println("File-Encryption procedure complete...")
+}
+
+/**
+Public Decryption API
+*/
+func (engine *DESFileEncryptor) DecryptFile(filename string) {
+	log.Println("Decryption procedure started...")
+
+	engine.decryptionFilename = "dec." + engine.filename
+	var err error
+	engine.decryptionFileConnector, err = os.Create(engine.decryptionFilename)
+	if err != nil {
+		log.Fatalln("Problem decrypting the file", err)
+	}
+	permissions := 0644
+	engine.decryptionFileConnector, err =
+		os.OpenFile(engine.decryptionFilename, os.O_APPEND|os.O_WRONLY, (os.FileMode)(permissions))
+	// file, err := os.OpenFile(filename, os.O_APPEND|os.O_WRONLY, (os.FileMode)(permissions))
+	defer engine.decryptionFileConnector.Close()
+	engine.runDecryption(filename)
+
+	log.Println("Decryption procedure complete...")
 }

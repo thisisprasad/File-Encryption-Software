@@ -12,6 +12,7 @@ func main() {
 	cipher.Init("des_input.txt")
 
 	encryptor.EncryptFile("test.txt")
+	encryptor.DecryptFile("test.txt.enc")
 
 	var encryptedData []byte = cipher.Encrypt(input)
 	var decryptedData []byte = cipher.Decrypt(encryptedData)
