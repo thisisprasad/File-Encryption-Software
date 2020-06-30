@@ -49,6 +49,13 @@ func MinInt(a int, b int) int {
 	return b
 }
 
+func MaxInt(a int, b int) int {
+	if a >= b {
+		return a
+	}
+	return b
+}
+
 func Substr(s string, startPos int, length int) string {
 	var res string
 	for i := startPos; i < MinInt(startPos+length, len(s)); i++ {
