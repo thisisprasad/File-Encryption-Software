@@ -2,7 +2,6 @@ package main
 
 import (
 	"bufio"
-	"fmt"
 	"log"
 	"os"
 	"strings"
@@ -218,7 +217,7 @@ func (cipher *DES_8encryption) fk(leftHalf []byte, rightHalf []byte, key []byte)
 encryption API exposed to client
 */
 func (cipher *DES_8encryption) Encrypt(plainText []byte) []byte {
-	log.Println("Input byte is:", plainText)
+	// log.Println("Input byte is:", plainText)
 
 	var ipBits []byte = cipher.applyPermutation(plainText, cipher.initialPermutation)
 	var leftHalf []byte = ipBits[0 : len(ipBits)/2]
@@ -231,13 +230,13 @@ func (cipher *DES_8encryption) Encrypt(plainText []byte) []byte {
 	fkBits = cipher.fk(leftHalf, rightHalf, cipher.key2)
 
 	var cipherData []byte = cipher.applyPermutation(fkBits, cipher.inversePermutation)
-	fmt.Println("cipherData:", cipherData)
+	// fmt.Println("cipherData:", cipherData)
 
 	return cipherData
 }
 
 func (cipher *DES_8encryption) Decrypt(encryptedData []byte) []byte {
-	log.Println("Input encryption data:", encryptedData)
+	// log.Println("Input encryption data:", encryptedData)
 	var ipInverseBits []byte = cipher.applyPermutation(encryptedData, cipher.initialPermutation)
 	var leftHalf []byte = ipInverseBits[0 : len(ipInverseBits)/2]
 	var rightHalf []byte = ipInverseBits[len(ipInverseBits)/2:]
@@ -249,7 +248,7 @@ func (cipher *DES_8encryption) Decrypt(encryptedData []byte) []byte {
 	fkBits = cipher.fk(leftHalf, rightHalf, cipher.key1)
 
 	var decryptedData []byte = cipher.applyPermutation(fkBits, cipher.inversePermutation)
-	fmt.Println("decrypted data:", decryptedData)
+	// fmt.Println("decrypted data:", decryptedData)
 
 	return decryptedData
 }

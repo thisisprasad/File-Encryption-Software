@@ -1,14 +1,13 @@
 package main
 
 import (
-	"fmt"
 	"io"
 	"log"
 	"os"
 )
 
 const (
-	bufferSize = 10
+	bufferSize = 1000000
 )
 
 type DESFileEncryptor struct {
@@ -22,11 +21,13 @@ type DESFileEncryptor struct {
 func (encryptor *DESFileEncryptor) getBinaryByteArray(byteVal byte) []byte {
 	var byteArray []byte
 	for byteVal > 0 {
-		byteArray = append([]byte{(byte)(byteVal % 2)}, byteArray...)
+		// byteArray = append([]byte{(byte)(byteVal % 2)}, byteArray...)
+		byteArray = append(byteArray, (byte)(byteVal%2))
 		byteVal /= 2
 	}
 	for (int)(len(byteArray)) < 8 {
-		byteArray = append([]byte{0}, byteArray...)
+		// byteArray = append([]byte{0}, byteArray...)
+		byteArray = append(byteArray, (byte)(0))
 	}
 
 	return byteArray
@@ -66,7 +67,7 @@ func (encryptor *DESFileEncryptor) writeEncryptionBufferToFile(encryptionBuffer 
 	encryptionDataSize int,
 	filename string) {
 	// var byteVal byte
-	fmt.Println("enccryption buffer length:", encryptionDataSize)
+	// fmt.Println("enccryption buffer length:", encryptionDataSize)
 	var byteArray []byte = make([]byte, encryptionDataSize)
 	var cache []byte = make([]byte, 8)
 	for i := 0; i < encryptionDataSize; i++ {
@@ -97,7 +98,7 @@ func (engine *DESFileEncryptor) writeDecryptionBufferToFile(decryptionBuffer *[]
 	decryptionDataSize int,
 	filename string) {
 
-	fmt.Println("Decryption buffer length:", decryptionDataSize)
+	// fmt.Println("Decryption buffer length:", decryptionDataSize)
 	var byteArray []byte = make([]byte, decryptionDataSize)
 	var cache []byte = make([]byte, 8)
 	for i := 0; i < decryptionDataSize; i++ {
@@ -153,7 +154,7 @@ func (encryptor *DESFileEncryptor) run(filename string) {
 		//	Write encryptionBuffer into file.
 		encryptor.writeEncryptionBufferToFile(&encryptionBuffer, bytesread, encryptor.encryptionFilename)
 
-		fmt.Println("bytesread:", bytesread, "bytes to string:", string(buffer[:bytesread]))
+		// fmt.Println("bytesread:", bytesread, "bytes to string:", string(buffer[:bytesread]))
 	}
 }
 
@@ -167,7 +168,7 @@ func (engine *DESFileEncryptor) runDecryption(filename string) {
 		decryptionBuffer[i] = make([]byte, 8)
 	}
 
-	fmt.Println("Encryption filename:", engine.encryptionFilename)
+	// fmt.Println("Encryption filename:", engine.encryptionFilename)
 	file, ferr := os.Open(engine.encryptionFilename)
 	if ferr != nil {
 		log.Fatalln("Problem opening encrypted file", ferr)
@@ -184,7 +185,7 @@ func (engine *DESFileEncryptor) runDecryption(filename string) {
 		//	Write decryptionBuffer into file
 		engine.writeDecryptionBufferToFile(&decryptionBuffer, bytesread, engine.decryptionFilename)
 
-		fmt.Println("Decryption, bytesread:", bytesread, " bytes to string:", string(buffer[:bytesread]))
+		// fmt.Println("Decryption, bytesread:", bytesread, " bytes to string:", string(buffer[:bytesread]))
 	}
 }
 
