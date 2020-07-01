@@ -88,8 +88,9 @@ func (encryptor *DESFileEncryptor) writeEncryptionBufferToFile(encryptionBuffer 
 	if err != nil {
 		log.Fatalln("Problem encrypting file", err)
 	}
-	defer file.Close()
 	_, err = file.WriteString((string)(byteArray))
+
+	file.Close()
 }
 
 func (engine *DESFileEncryptor) writeDecryptionBufferToFile(decryptionBuffer *[][]byte,
@@ -166,8 +167,13 @@ func (engine *DESFileEncryptor) runDecryption(filename string) {
 		decryptionBuffer[i] = make([]byte, 8)
 	}
 
+	fmt.Println("Encryption filename:", engine.encryptionFilename)
+	file, ferr := os.Open(engine.encryptionFilename)
+	if ferr != nil {
+		log.Fatalln("Problem opening encrypted file", ferr)
+	}
 	for {
-		bytesread, err := engine.decryptionFileConnector.Read(buffer)
+		bytesread, err := file.Read(buffer)
 		if err != nil {
 			if err != io.EOF {
 				log.Fatalln("Problem reading encrypted file", err)
@@ -212,8 +218,8 @@ func (engine *DESFileEncryptor) DecryptFile(filename string) {
 	engine.decryptionFileConnector, err =
 		os.OpenFile(engine.decryptionFilename, os.O_APPEND|os.O_WRONLY, (os.FileMode)(permissions))
 	// file, err := os.OpenFile(filename, os.O_APPEND|os.O_WRONLY, (os.FileMode)(permissions))
-	defer engine.decryptionFileConnector.Close()
 	engine.runDecryption(filename)
+	engine.decryptionFileConnector.Close()
 
 	log.Println("Decryption procedure complete...")
 }

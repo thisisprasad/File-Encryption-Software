@@ -237,6 +237,7 @@ func (cipher *DES_8encryption) Encrypt(plainText []byte) []byte {
 }
 
 func (cipher *DES_8encryption) Decrypt(encryptedData []byte) []byte {
+	log.Println("Input encryption data:", encryptedData)
 	var ipInverseBits []byte = cipher.applyPermutation(encryptedData, cipher.initialPermutation)
 	var leftHalf []byte = ipInverseBits[0 : len(ipInverseBits)/2]
 	var rightHalf []byte = ipInverseBits[len(ipInverseBits)/2:]
@@ -248,6 +249,7 @@ func (cipher *DES_8encryption) Decrypt(encryptedData []byte) []byte {
 	fkBits = cipher.fk(leftHalf, rightHalf, cipher.key1)
 
 	var decryptedData []byte = cipher.applyPermutation(fkBits, cipher.inversePermutation)
+	fmt.Println("decrypted data:", decryptedData)
 
 	return decryptedData
 }
